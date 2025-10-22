@@ -45,7 +45,7 @@ public class FlutterEsimPlugin: NSObject, FlutterPlugin {
         switch call.method {
         case "isSupportESim":
             let args = call.arguments as? [String];
-            result(esimChecker.isSupportESim(supportedModels: args ?? []));
+            result(esimChecker.isSupportESim(customModels: args ?? []));
             break;
         case "installEsimProfile":
             guard let args = call.arguments else {
