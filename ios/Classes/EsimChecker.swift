@@ -6,7 +6,7 @@ class EsimChecker: NSObject {
     
     public var handler: EventCallbackHandler?
     
-    private let internalSupportedIpadModels: Set<String> = [
+    private let internalSupportedIPadModels: Set<String> = [
         "iPad6,8", "iPad6,12", "iPad7,2", "iPad7,4", "iPad7,6", "iPad7,12",
         "iPad8,3", "iPad8,4", "iPad8,7", "iPad8,8", "iPad8,10", "iPad8,12",
         "iPad11,2", "iPad11,4", "iPad11,7", "iPad12,2", "iPad13,2", "iPad13,6",
@@ -26,34 +26,41 @@ class EsimChecker: NSObject {
         }
         return identifier
     }()
-
+    
     private func extractMajorModelNumber(from identifier: String) -> Int {
         guard identifier.hasPrefix("iPhone"),
-              let commaIndex = identifier.firstIndex(of: ","),
-              let majorStr = Int(identifier[identifier.index(after: identifier.startIndex(of: "iPhone")!) ..< commaIndex])
+              let commaRange = identifier.range(of: ","),
+              let prefixRange = identifier.range(of: "iPhone")
         else { return 0 }
-        return majorStr
+        
+        let startIndex = prefixRange.upperBound
+        let endIndex = commaRange.lowerBound
+        let majorStr = String(identifier[startIndex..<endIndex])
+        return Int(majorStr) ?? 0
     }
     
     func isSupportESim(customModels: [String] = []) -> Bool {
         if #available(iOS 12.0, *) {
             let provisioning = CTCellularPlanProvisioning()
-            let systemSupported = provisioning.supportsCellularPlan()
-            if systemSupported { return true }
+            if provisioning.supportsCellularPlan() {
+                return true
+            }
         }
-       
+        
         if identifier.hasPrefix("iPhone") {
             let major = extractMajorModelNumber(from: identifier)
             if major >= 11 {
                 return true
             }
         }
-       
+        
         if identifier.hasPrefix("iPad") {
             let ipadSupported = internalSupportedIPadModels.contains { identifier.contains($0) }
-            if ipadSupported { return true }
+            if ipadSupported {
+                return true
+            }
         }
-       
+        
         if !customModels.isEmpty {
             return customModels.contains { identifier.contains($0) }
         }
