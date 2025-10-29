@@ -6,15 +6,7 @@ class EsimChecker: NSObject {
     
     public var handler: EventCallbackHandler?
     
-    private let internalSupportedModels: Set<String> = [
-        "iPhone12,1", "iPhone12,3", "iPhone12,5",
-        "iPhone13,1", "iPhone13,2", "iPhone13,3", "iPhone13,4",
-        "iPhone14,2", "iPhone14,3", "iPhone14,4", "iPhone14,5",
-        "iPhone14,7", "iPhone14,8", "iPhone15,2", "iPhone15,3",
-        "iPhone15,4", "iPhone15,5", "iPhone16,1", "iPhone16,2",
-        "iPhone17,1", "iPhone17,2", "iPhone17,3", "iPhone17,4", "iPhone17,5",
-        "iPhone18,1", "iPhone18,2", "iPhone18,3", "iPhone18,4",
-        "iPhone12,8", "iPhone14,6",
+    private let internalSupportedIpadModels: Set<String> = [
         "iPad6,8", "iPad6,12", "iPad7,2", "iPad7,4", "iPad7,6", "iPad7,12",
         "iPad8,3", "iPad8,4", "iPad8,7", "iPad8,8", "iPad8,10", "iPad8,12",
         "iPad11,2", "iPad11,4", "iPad11,7", "iPad12,2", "iPad13,2", "iPad13,6",
@@ -34,18 +26,39 @@ class EsimChecker: NSObject {
         }
         return identifier
     }()
+
+    private func extractMajorModelNumber(from identifier: String) -> Int {
+        guard identifier.hasPrefix("iPhone"),
+              let commaIndex = identifier.firstIndex(of: ","),
+              let majorStr = Int(identifier[identifier.index(after: identifier.startIndex(of: "iPhone")!) ..< commaIndex])
+        else { return 0 }
+        return majorStr
+    }
     
     func isSupportESim(customModels: [String] = []) -> Bool {
-        let allModels = internalSupportedModels.union(customModels)
-        let modelSupported = allModels.contains { identifier.contains($0) }
-        
         if #available(iOS 12.0, *) {
             let provisioning = CTCellularPlanProvisioning()
             let systemSupported = provisioning.supportsCellularPlan()
-            return modelSupported || systemSupported
+            if systemSupported { return true }
+        }
+       
+        if identifier.hasPrefix("iPhone") {
+            let major = extractMajorModelNumber(from: identifier)
+            if major >= 11 {
+                return true
+            }
+        }
+       
+        if identifier.hasPrefix("iPad") {
+            let ipadSupported = internalSupportedIPadModels.contains { identifier.contains($0) }
+            if ipadSupported { return true }
+        }
+       
+        if !customModels.isEmpty {
+            return customModels.contains { identifier.contains($0) }
         }
         
-        return modelSupported
+        return false
     }
     
     func installEsimProfile(
